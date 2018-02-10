@@ -1,0 +1,32 @@
+<!-- Replace these import links with links to files hosted on your own server -->
+<link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+
+<?!= include('sidebar.css.html'); ?>
+
+<div class="sidebar branding-below">
+  <div id="button-bar">
+    <button class="colored" id="run-linkify">Linkify</button>
+    <button id="insert-text">Insert</button>
+  </div>
+  
+  <div class="col-contain">
+    <div class="col">
+      <h3>      
+      <span id="selected-text">Selected Text</span>
+      </h3>
+      
+    </div>
+  </div>
+  <span>Link:<span>
+  <textarea class="width-100" id="url-text" rows="1"></textarea>
+  <pre id="preview"> </pre>  
+
+</div>
+
+<div class="sidebar bottom">
+  <img alt="Add-on logo" class="logo" width="27" height="27"
+      src="http://assi.zohosites.com/files/My%20Mandelbrot%20set.jpg">
+  <span class="gray branding-text">Linkify by Assi</span>
+</div>
+
+<?!= include('sidebar.js.html'); ?>
