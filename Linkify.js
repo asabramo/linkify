@@ -76,27 +76,19 @@ function getSelectedText() {
 }
 
 /**
- * Gets the user-selected text and translates it from the origin language to the
- * destination language. The languages are notated by their two-letter short
- * form. For example, English is "en", and Spanish is "es". The origin language
- * may be specified as "auto" to indicate that Google Translate should
- * auto-detect the language.
+ * Gets the user-selected text and converts it into a link.
+ * Then fetches the page behind the link and returns the page for preview.
  *
- * @param {string} origin The two-letter short form for the origin language.
- * @param {string} dest The two-letter short form for the destination language.
- * @param {boolean} savePrefs Whether to save the origin and destination
- *     language preferences.
- * @return {string} The result of the translation.
+ * @return {string} The word to link on, the link to use and the preview page, with all links stripped off
  */
 function linkify() {
   var text = getSelectedText();
   var word = text[0];
   word = word.replace(' ', '_');
-  var url = 'http://en.wikipedia.org/wiki/' + word;//TODO - convert spaces etc.
-  Logger.log(url);
+  var url = 'http://en.wikipedia.org/wiki/' + word;
   var response = UrlFetchApp.fetch(url, {'muteHttpExceptions': true});
-  Logger.log(response);
-  return {word: word, url: url, page: response.getContentText()};
+  var noLinks = response.getContentText().replace(/href="/g, 'nohref="');
+  return {word: word, url: url, page: noLinks};
 }
 /**
  * Replaces the text of the current selection with the provided text, or
