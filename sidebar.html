@@ -1,9 +1,17 @@
-<!-- Replace these import links with links to files hosted on your own server -->
 <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
 
 <?!= include('sidebar.css.html'); ?>
 
 <div class="sidebar branding-below">
+  <form action="">
+    <div>
+      <div>
+        <input type="radio" name="method" value="url" checked=true>Wikipedia (Lang:
+        <textarea font-color="red" class="lang-text" id="lang" rows="1">en</textarea>)
+      </div>
+      <input type="radio" name="method" value="searchDrive"> Search Drive<br>  
+    </div>
+  </form>
   <div id="button-bar">
     <button class="colored" id="run-linkify">Linkify</button>
     <button id="insert-text">Insert</button>
@@ -20,7 +28,6 @@
   <span>Link:<span>
   <textarea class="width-100" id="url-text" rows="1"></textarea>
   <pre id="preview"> </pre>  
-
 </div>
 
 <div class="sidebar bottom">
