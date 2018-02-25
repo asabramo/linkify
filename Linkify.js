@@ -76,82 +76,109 @@ function getSelectedText() {
 }
 
 /**
- * Gets the user-selected text and converts it into a link.
- * Then fetches the page behind the link and returns the page for preview.
- *
- * @return {string} The word to link on, the link to use and the preview page, with all links stripped off
+ * Create a URL from the provided text, by searching the user's drive for
+ * files containing the word in their title.
+ * If found, the files are presented as radio buttons with the name "link" 
+ * and the value is the URL - this allows the containing HTML page to listen 
+ * to the radio button change event and use the right URL.
+ * by default, the last item is checked.
+ * @return {object} word, url, page. Page is the preview page to be presented.
  */
-function linkify() {
-  var text = getSelectedText();
+function createDriveUrls(text) {
   var word = text[0];
-  word = word.replace(' ', '_');
-  var url = 'http://en.wikipedia.org/wiki/' + word;
+  var url;
+  var q = "title contains '" + text[0]+"'";
+  var files = DriveApp.searchFiles(q);
+  Logger.log(files);
+  Logger.log(files.hasNext());
+  var filesList = '';
+  while (files.hasNext()) {
+    var file = files.next();      
+    if (filesList === '') {      
+      filesList = '<form action=""> ';
+    }    
+    filesList += '<input type="radio" name="link" value="' + file.getUrl() + '" checked=true>' + file.getName() + '<br>'
+    url = file.getUrl();
+  }
+  if (filesList === '') {
+    filesList = 'No matching results found :-('
+  }
+  else {
+    filesList += '</form>';
+  }
+  Logger.log(filesList);
+  return {word: word, url: url, page: filesList};
+}
+
+/**
+ * Create a URL from the provided text, by linking to Wikipedia
+ * 
+ * @return {object} word, url, page. Page is result from fetching the URL, with links disabled
+ */
+function createWikiUrl(text, lang) {
+  var word = text[0].trim();
+  lang = lang ? lang : 'en';
+  var url = 'http://' + lang + '.wikipedia.org/wiki/' + encodeURI(word);  
   var response = UrlFetchApp.fetch(url, {'muteHttpExceptions': true});
-  var noLinks = response.getContentText().replace(/href="/g, 'nohref="');
+   var noLinks = response.getContentText().replace(/href="/g, 'nohref="');
   return {word: word, url: url, page: noLinks};
 }
+
 /**
- * Replaces the text of the current selection with the provided text, or
+ * Create a URL from the provided text, according to the requested method
+ * 
+ * @return {object} word, url, page. Page is the preview page to be presented.
+ */
+function linkify(method, lang) {
+  var text = getSelectedText();  
+  if (method == 'url') {
+    return createWikiUrl(text, lang);
+  }  
+  if (method == 'searchDrive') {
+    return createDriveUrls(text);
+  }
+}
+
+/**
+ * Set the link URL on the element and recursively on all its children, if it has children.
+ */
+function setLinkOnAllChildren(element, link) {
+  if (!element.getNumChildren || element.getNumChildren() == 0) {
+    element.setLinkUrl(link);
+    return;
+  }
+  for (var i = 0; i < element.getNumChildren(); i++) {
+    var child = element.getChild(i);
+      setLinkOnAllChildren(child, link);
+  }    
+}
+
+/**
+ * Add the link to the text of the current selection, or
  * inserts text at the current cursor location. (There will always be either
  * a selection or a cursor.) If multiple elements are selected, only inserts the
- * translated text in the first element that can contain text and removes the
+ *  text in the first element that can contain text and removes the
  * other elements.
  *
  * @param {string} newText The text with which to replace the current selection.
  */
-function insertText(newText, link) {
+function insertLink(newText, link) {
   var selection = DocumentApp.getActiveDocument().getSelection();
-  if (selection) {
-    var replaced = false;
-    var elements = selection.getRangeElements();
-    if (elements.length == 1 &&
-        elements[0].getElement().getType() ==
-        DocumentApp.ElementType.INLINE_IMAGE) {
-      throw "Can't insert text into an image.";
-    }
+  if (selection) {    
+    var elements = selection.getRangeElements();    
     for (var i = 0; i < elements.length; i++) {
-      if (elements[i].isPartial()) {
-        var element = elements[i].getElement().asText();
+      var element = elements[i].getElement();
+      Logger.log("Found Element " + i + " type: " + element.getType());      
+      if (element.getType() === DocumentApp.ElementType.TEXT && 
+          elements[i].isPartial()) {
+        element = element.asText();
         var startIndex = elements[i].getStartOffset();
         var endIndex = elements[i].getEndOffsetInclusive();
-
-        var remainingText = element.getText().substring(endIndex + 1);
-        element.deleteText(startIndex, endIndex);
-        if (!replaced) {
-          element.insertText(startIndex, newText).setLinkUrl(startIndex, startIndex + newText.length, link);
-          replaced = true;
-        } else {
-          // This block handles a selection that ends with a partial element. We
-          // want to copy this partial text to the previous element so we don't
-          // have a line-break before the last partial.
-          var parent = element.getParent();
-          parent.getPreviousSibling().asText().appendText(remainingText).setLinkUrl(link);
-          // We cannot remove the last paragraph of a doc. If this is the case,
-          // just remove the text within the last paragraph instead.
-          if (parent.getNextSibling()) {
-            parent.removeFromParent();
-          } else {
-            element.removeFromParent();
-          }
-        }
-      } else {
-        var element = elements[i].getElement();
-        if (!replaced && element.editAsText) {
-          // Only translate elements that can be edited as text, removing other
-          // elements.
-          element.clear();
-          element.asText().setText(newText).setLinkUrl(link);
-          replaced = true;
-        } else {
-          // We cannot remove the last paragraph of a doc. If this is the case,
-          // just clear the element.
-          if (element.getNextSibling()) {
-            element.removeFromParent();
-          } else {
-            element.clear();
-          }
-        }
+        element.setLinkUrl(startIndex, endIndex, link);
       }
+      else {
+        setLinkOnAllChildren(element, link);
+      }   
     }
   } else {
     var cursor = DocumentApp.getActiveDocument().getCursor();
