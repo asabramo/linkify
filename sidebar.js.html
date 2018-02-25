@@ -30,7 +30,7 @@
             element.disabled = false;
           })
         .withUserObject(this)
-        .insertText(word, link);
+        .insertLink(word, link);
   }
 
  /**
@@ -46,6 +46,12 @@
             $('#selected-text').html(link.word);
             $('#preview').html(link.page);
             $('#url-text').val(link.url);
+            var driveLinkRadios = $('input[type=radio][name=link]');
+            if (driveLinkRadios) {
+              driveLinkRadios.change(function() {
+                $('#url-text').val($('input[type=radio][name=link]:checked').val());
+              });
+            }
             element.disabled = false;
           })
         .withFailureHandler(
@@ -54,7 +60,7 @@
             element.disabled = false;
           })
         .withUserObject(this)
-        .linkify();
+        .linkify($('input[name=method]:checked').val(), $('#lang').val());
   }
   
   /**
